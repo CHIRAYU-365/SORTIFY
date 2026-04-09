@@ -86,3 +86,35 @@ destination/
 
 Every non-dry-run job writes to `~/.folder_organiser_manifest.json`.
 The Undo tab reads this to reverse operations (move-back or unzip).
+
+---
+
+## ☁️ Heroku Deployment
+
+```bash
+# 1. Install Heroku CLI & login
+# heroku login
+
+# 2. Update deps (gunicorn added)
+pip install -r requirements.txt
+
+# 3. Local test (production mode)
+gunicorn app:app
+# Open http://localhost:8000
+
+# 4. Deploy
+git add .
+git commit -m "feat: heroku deployment setup"
+heroku create your-sortify-app
+git push heroku main
+
+# 5. Open live app
+heroku open
+heroku logs --tail  # monitor
+```
+
+**Notes**:
+- App runs on `PORT` env var (Heroku auto-sets).
+- Manifest saved to ephemeral `~/.folder_organiser_manifest.json` (lost on dyno restart).
+- Static files served via Flask (templates/index.html).
+
