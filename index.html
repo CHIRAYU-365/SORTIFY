@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ SORTIFY — Folder Organiser</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   ROOT & RESET
+═══════════════════════════════════════════════ */
+:root {
+  --bg:       #0a0a0f;
+  --bg1:      #0f0f18;
+  --bg2:      #14141f;
+  --bg3:      #1a1a2a;
+  --border:   #2a2a3f;
+  --amber:    #ffb300;
+  --amber2:   #ff8c00;
+  --green:    #00e676;
+  --red:      #ff1744;
+  --blue:     #00b0ff;
+  --purple:   #d500f9;
+  --text:     #e0e0f0;
+  --sub:      #6a6a8a;
+  --mono:     "IBM Plex Mono", monospace;
+  --sans:     "Space Grotesk", sans-serif;
+  --glow-a:   0 0 12px #ffb30055;
+  --glow-g:   0 0 12px #00e67655;
+  --glow-r:   0 0 12px #ff174455;
+}
+*, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+html { font-size:14px; }
+body {
+  font-family: var(--mono);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 39px, #ffffff04 39px, #ffffff04 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, #ffffff03 39px, #ffffff03 40px);
+}
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background: var(--bg1); }
+::-webkit-scrollbar-thumb { background: #3a3a5a; border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+/* ═══════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════ */
+header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 28px;
+  background: var(--bg1);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top:0; z-index:100;
+}
+.logo {
+  display:flex; align-items:center; gap:14px;
+}
+.logo-icon {
+  width:38px; height:38px;
+  background: var(--amber);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px;
+  animation: pulse 3s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{box-shadow:var(--glow-a)} 50%{box-shadow:0 0 28px #ffb300aa} }
+.logo-text h1 { font-family:var(--sans); font-size:1.4rem; font-weight:700; letter-spacing:-0.5px; }
+.logo-text h1 span { color:var(--amber); }
+.logo-text p { font-size:.72rem; color:var(--sub); letter-spacing:.1em; }
+.header-meta {
+  display:flex; gap:20px; align-items:center;
+}
+.pill {
+  padding:3px 10px;
+  border:1px solid var(--border);
+  border-radius:3px;
+  font-size:.7rem;
+  color:var(--sub);
+}
+.pill.ok { border-color:#00e67633; color:var(--green); background:#00e67610; }
+.pill.warn { border-color:#ffb30033; color:var(--amber); background:#ffb30010; }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════ */
+.app { display:grid; grid-template-columns:220px 1fr; min-height:calc(100vh - 67px); }
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR NAV
+═══════════════════════════════════════════════ */
+.sidebar {
+  background: var(--bg1);
+  border-right: 1px solid var(--border);
+  padding:20px 0;
+  position:sticky; top:67px; height:calc(100vh - 67px); overflow-y:auto;
+}
+.nav-section { margin-bottom:6px; }
+.nav-label {
+  padding:8px 20px 4px;
+  font-size:.65rem;
+  letter-spacing:.15em;
+  color:var(--sub);
+  text-transform:uppercase;
+}
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 20px;
+  cursor:pointer;
+  transition:.15s;
+  border-left:3px solid transparent;
+  color:var(--sub);
+  font-size:.85rem;
+  user-select:none;
+}
+.nav-item:hover { color:var(--text); background:#ffffff05; }
+.nav-item.active { color:var(--amber); border-left-color:var(--amber); background:#ffb30008; }
+.nav-item .icon { font-size:1rem; width:20px; text-align:center; }
+.nav-badge {
+  margin-left:auto;
+  background:var(--amber);
+  color:#000;
+  font-size:.6rem;
+  padding:1px 6px;
+  border-radius:2px;
+  font-weight:700;
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN CONTENT
+═══════════════════════════════════════════════ */
+.main { padding:0; overflow:hidden; }
+.tab-content { display:none; height:100%; }
+.tab-content.active { display:grid; }
+
+/* ═══════════════════════════════════════════════
+   PANELS (left config + right log)
+═══════════════════════════════════════════════ */
+.panel-layout { grid-template-columns:360px 1fr; height:calc(100vh - 67px); }
+.config-panel {
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+  padding:20px;
+}
+.log-panel { display:flex; flex-direction:column; overflow:hidden; }
+
+/* ═══════════════════════════════════════════════
+   FORM COMPONENTS
+═══════════════════════════════════════════════ */
+.section {
+  margin-bottom:20px;
+  padding:16px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:4px;
+}
+.section-title {
+  font-size:.7rem;
+  letter-spacing:.12em;
+  color:var(--amber);
+  text-transform:uppercase;
+  margin-bottom:12px;
+  display:flex; align-items:center; gap:8px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+label { display:block; font-size:.75rem; color:var(--sub); margin-bottom:4px; }
+input[type=text], input[type=number], select {
+  width:100%;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:3px;
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:.82rem;
+  padding:8px 10px;
+  outline:none;
+  transition:.15s;
+  margin-bottom:10px;
+}
+input[type=text]:focus, input[type=number]:focus, select:focus {
+  border-color:var(--amber);
+  box-shadow: var(--glow-a);
+}
+.path-wrap { display:flex; gap:6px; margin-bottom:10px; }
+.path-wrap input { margin-bottom:0; }
+.btn {
+  font-family:var(--mono);
+  font-size:.8rem;
+  font-weight:600;
+  padding:8px 14px;
+  border:1px solid var(--border);
+  border-radius:3px;
+  cursor:pointer;
+  transition:.15s;
+  white-space:nowrap;
+  letter-spacing:.04em;
+}
+.btn-amber {
+  background:var(--amber); color:#000; border-color:var(--amber);
+}
+.btn-amber:hover { background:var(--amber2); box-shadow:var(--glow-a); }
+.btn-ghost {
+  background:transparent; color:var(--sub); border-color:var(--border);
+}
+.btn-ghost:hover { color:var(--text); border-color:var(--text); }
+.btn-green { background:#00e67620; color:var(--green); border-color:#00e67640; }
+.btn-green:hover { background:#00e67630; box-shadow:var(--glow-g); }
+.btn-red { background:#ff174420; color:var(--red); border-color:#ff174440; }
+.btn-red:hover { background:#ff174430; box-shadow:var(--glow-r); }
+.btn-sm { padding:5px 10px; font-size:.72rem; }
+.btn-full { width:100%; justify-content:center; text-align:center; }
+.btn-row { display:flex; gap:8px; flex-wrap:wrap; }
+.toggle-row {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:8px;
+}
+.toggle-label { font-size:.78rem; color:var(--text); }
+.toggle {
+  position:relative; width:36px; height:20px;
+  cursor:pointer; user-select:none;
+}
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-slider {
+  position:absolute; inset:0;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:20px;
+  transition:.2s;
+}
+.toggle-slider::before {
+  content:''; position:absolute;
+  width:14px; height:14px;
+  left:2px; top:2px;
+  background:var(--sub);
+  border-radius:50%;
+  transition:.2s;
+}
+.toggle input:checked + .toggle-slider { background:#ffb30030; border-color:var(--amber); }
+.toggle input:checked + .toggle-slider::before { left:18px; background:var(--amber); }
+.col2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+/* ═══════════════════════════════════════════════
+   BIG RUN BUTTON
+═══════════════════════════════════════════════ */
+.run-btn {
+  width:100%; padding:14px;
+  background: linear-gradient(135deg, var(--amber), var(--amber2));
+  color:#000; font-family:var(--sans); font-size:1rem; font-weight:700;
+  border:none; border-radius:4px; cursor:pointer;
+  letter-spacing:.05em;
+  transition:.2s;
+  position:relative; overflow:hidden;
+}
+.run-btn::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(90deg,transparent,#ffffff30,transparent);
+  transform:translateX(-100%);
+  transition:.4s;
+}
+.run-btn:hover::before { transform:translateX(100%); }
+.run-btn:hover { box-shadow:0 0 24px #ffb30066; }
+.run-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* ═══════════════════════════════════════════════
+   TERMINAL LOG
+═══════════════════════════════════════════════ */
+.log-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 16px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.log-header-left { display:flex; align-items:center; gap:10px; }
+.terminal-dots { display:flex; gap:5px; }
+.dot { width:10px; height:10px; border-radius:50%; }
+.dot-r { background:#ff5f57; } .dot-y { background:#febc2e; } .dot-g { background:#28c840; }
+.log-title { font-size:.75rem; color:var(--sub); letter-spacing:.1em; }
+.progress-bar-wrap {
+  height:3px; background:var(--bg3); flex-shrink:0;
+  position:relative; overflow:hidden;
+}
+.progress-bar {
+  height:100%;
+  background:linear-gradient(90deg, var(--amber), var(--green));
+  width:0%;
+  transition:width .3s;
+  position:relative;
+}
+.progress-bar::after {
+  content:'';
+  position:absolute; right:0; top:0; bottom:0;
+  width:40px;
+  background:linear-gradient(90deg, transparent, #fff6);
+}
+.log-body {
+  flex:1; overflow-y:auto;
+  padding:14px 16px;
+  font-size:.78rem;
+  line-height:1.8;
+  background:var(--bg);
+}
+.log-line { display:flex; gap:8px; }
+.log-ts { color:#3a3a5a; flex-shrink:0; }
+.log-ok   { color:var(--green); }
+.log-warn { color:var(--amber); }
+.log-error{ color:var(--red); }
+.log-system{ color:var(--blue); }
+.log-sep  { color:#3a3a5a; display:block; }
+.log-footer {
+  display:flex; gap:8px; align-items:center;
+  padding:8px 16px;
+  background:var(--bg2);
+  border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+.status-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--sub);
+  flex-shrink:0;
+}
+.status-dot.running { background:var(--amber); animation:blink 1s infinite; }
+.status-dot.done { background:var(--green); }
+.status-dot.error { background:var(--red); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.status-text { font-size:.75rem; color:var(--sub); }
+
+/* ═══════════════════════════════════════════════
+   FULL-PAGE TABS (stats, duplicates, etc.)
+═══════════════════════════════════════════════ */
+.full-panel { grid-template-columns:1fr; height:calc(100vh - 67px); overflow-y:auto; }
+.full-panel > .inner { padding:24px; max-width:1100px; }
+
+.page-title {
+  font-family:var(--sans); font-size:1.4rem; font-weight:700;
+  margin-bottom:4px;
+  color:var(--text);
+}
+.page-sub { font-size:.78rem; color:var(--sub); margin-bottom:24px; }
+
+.card {
+  background:var(--bg1);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:16px;
+  margin-bottom:16px;
+}
+.card-title {
+  font-size:.7rem; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--amber); margin-bottom:12px;
+}
+
+/* stats grid */
+.stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:20px; }
+.stat-box {
+  background:var(--bg2); border:1px solid var(--border); border-radius:3px;
+  padding:14px 16px; text-align:center;
+}
+.stat-val { font-size:1.6rem; font-weight:700; color:var(--amber); font-family:var(--sans); }
+.stat-lbl { font-size:.68rem; color:var(--sub); margin-top:3px; }
+
+/* cat bars */
+.bar-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:.78rem; }
+.bar-label { width:120px; color:var(--sub); flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bar-track { flex:1; height:10px; background:var(--bg3); border-radius:2px; overflow:hidden; }
+.bar-fill { height:100%; background:linear-gradient(90deg,var(--amber),var(--amber2)); border-radius:2px; transition:.5s; }
+.bar-count { width:50px; text-align:right; color:var(--text); }
+
+/* dup groups */
+.dup-group {
+  background:var(--bg2); border:1px solid var(--border); border-radius:3px;
+  margin-bottom:10px; overflow:hidden;
+}
+.dup-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:9px 12px;
+  background:var(--bg3);
+  border-bottom:1px solid var(--border);
+  font-size:.75rem;
+  cursor:pointer;
+  user-select:none;
+}
+.dup-header:hover { background:#ffffff05; }
+.dup-files { padding:6px 12px; }
+.dup-file {
+  display:flex; align-items:center; gap:8px;
+  padding:4px 0; border-bottom:1px solid var(--border);
+  font-size:.75rem;
+}
+.dup-file:last-child { border-bottom:none; }
+.dup-check { accent-color:var(--amber); cursor:pointer; }
+.dup-name { flex:1; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dup-size { color:var(--sub); flex-shrink:0; }
+
+/* rename preview */
+.rename-preview { max-height:320px; overflow-y:auto; margin-top:12px; }
+.rename-row {
+  display:flex; align-items:center; gap:10px; padding:4px 0;
+  border-bottom:1px solid var(--border); font-size:.75rem;
+}
+.rename-row:last-child { border-bottom:none; }
+.rename-old { flex:1; color:var(--sub); overflow:hidden; text-overflow:ellipsis; }
+.rename-arrow { color:var(--amber); flex-shrink:0; }
+.rename-new { flex:1; color:var(--green); overflow:hidden; text-overflow:ellipsis; }
+.rename-same { color:var(--sub); font-style:italic; }
+
+/* undo history */
+.history-item {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 0; border-bottom:1px solid var(--border); font-size:.78rem;
+}
+.history-item:last-child { border-bottom:none; }
+.history-job { font-weight:600; color:var(--amber); font-size:.7rem; }
+.history-ts { color:var(--sub); flex:1; }
+.history-count { color:var(--text); }
+
+/* watcher */
+.watch-entry {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 12px; background:var(--bg2); border:1px solid var(--border);
+  border-radius:3px; margin-bottom:8px; font-size:.78rem;
+}
+.watch-indicator { width:8px; height:8px; border-radius:50%; background:var(--green); animation:blink 1.5s infinite; }
+
+/* toast */
+.toast-container { position:fixed; bottom:20px; right:20px; z-index:999; display:flex; flex-direction:column; gap:8px; }
+.toast {
+  padding:10px 16px; border-radius:3px; font-size:.78rem;
+  background:var(--bg2); border:1px solid var(--border);
+  animation:toastIn .2s ease-out;
+  max-width:320px;
+}
+.toast.ok { border-color:#00e67640; color:var(--green); }
+.toast.err { border-color:#ff174440; color:var(--red); }
+.toast.info { border-color:#ffb30040; color:var(--amber); }
+@keyframes toastIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+/* responsive */
+@media(max-width:820px){
+  .app { grid-template-columns:1fr; }
+  .sidebar { display:flex; overflow-x:auto; height:auto; border-right:none; border-bottom:1px solid var(--border); padding:0; position:static; }
+  .nav-label, .nav-section:first-child .nav-label { display:none; }
+  .nav-item { padding:12px 14px; border-left:none; border-bottom:3px solid transparent; flex-shrink:0; }
+  .nav-item.active { border-bottom-color:var(--amber); border-left-color:transparent; }
+  .panel-layout { grid-template-columns:1fr; grid-template-rows:auto 1fr; }
+  .config-panel { border-right:none; border-bottom:1px solid var(--border); max-height:360px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text">
+      <h1>F<span>ORG</span></h1>
+      <p>FOLDER ORGANISER // FLASK EDITION</p>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="pill" id="watchdog-badge">
+      {% if watchdog_ok %}✓ watchdog ready{% else %}⚠ watchdog missing{% endif %}
+    </div>
+    <div class="pill" id="clock"></div>
+  </div>
+</header>
+
+<div class="app">
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<nav class="sidebar">
+  <div class="nav-section">
+    <div class="nav-label">Organise</div>
+    <div class="nav-item active" data-tab="organise">
+      <span class="icon">⚙️</span> Organiser
+    </div>
+    <div class="nav-item" data-tab="stats">
+      <span class="icon">📊</span> Stats
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Automation</div>
+    <div class="nav-item" data-tab="watcher">
+      <span class="icon">👁</span> Auto-Watcher
+    </div>
+    <div class="nav-item" data-tab="rename">
+      <span class="icon">✏️</span> Bulk Rename
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Utilities</div>
+    <div class="nav-item" data-tab="duplicates">
+      <span class="icon">🔍</span> Duplicates
+      <span class="nav-badge" id="dup-badge" style="display:none">!</span>
+    </div>
+    <div class="nav-item" data-tab="undo">
+      <span class="icon">↩️</span> Undo
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="main">
+
+<!-- ─────────── ORGANISER TAB ─────────── -->
+<div class="tab-content active panel-layout" id="tab-organise">
+  <!-- Config -->
+  <div class="config-panel">
+
+    <div class="section">
+      <div class="section-title">📂 Paths</div>
+      <label>Source Folder</label>
+      <div class="path-wrap">
+        <input type="text" id="src" placeholder="/path/to/source">
+        <button class="btn btn-ghost btn-sm" onclick="scanFolder()">Scan</button>
+      </div>
+      <label>Destination Folder</label>
+      <input type="text" id="dst" placeholder="/path/to/destination  (or same as source)">
+      <div class="toggle-row">
+        <span class="toggle-label">Same as source (in-place)</span>
+        <label class="toggle"><input type="checkbox" id="inplace" onchange="if(this.checked)document.getElementById('dst').value=document.getElementById('src').value"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">⚙️ Mode</div>
+      <div class="toggle-row"><span class="toggle-label">Move files (off = Copy)</span>
+        <label class="toggle"><input type="checkbox" id="opt-move" checked><span class="toggle-slider"></span></label></div>
+      <div class="toggle-row"><span class="toggle-label">Dry Run (preview only)</span>
+        <label class="toggle"><input type="checkbox" id="opt-dry"><span class="toggle-slider"></span></label></div>
+      <div class="toggle-row"><span class="toggle-label">Compress to ZIP before move</span>
+        <label class="toggle"><input type="checkbox" id="opt-compress"><span class="toggle-slider"></span></label></div>
+      <div class="toggle-row"><span class="toggle-label">Skip duplicate files</span>
+        <label class="toggle"><input type="checkbox" id="opt-dedupe"><span class="toggle-slider"></span></label></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔎 Filters</div>
+      <div class="col2">
+        <div>
+          <label>Min Size (bytes)</label>
+          <input type="number" id="filt-min" placeholder="0" min="0">
+        </div>
+        <div>
+          <label>Max Size (bytes)</label>
+          <input type="number" id="filt-max" placeholder="∞">
+        </div>
+      </div>
+      <label>Extension Whitelist (comma-sep, e.g. .jpg,.pdf)</label>
+      <input type="text" id="filt-white" placeholder="leave blank = all">
+      <label>Extension Blacklist</label>
+      <input type="text" id="filt-black" placeholder="e.g. .tmp,.log">
+    </div>
+
+    <button class="run-btn" id="run-btn" onclick="runOrganise()">▶ RUN ORGANISER</button>
+    <div style="height:10px"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm btn-full" onclick="clearLog()">Clear Log</button>
+      <button class="btn btn-ghost btn-sm btn-full" onclick="saveLog()">Save Log</button>
+    </div>
+  </div>
+
+  <!-- Log Panel -->
+  <div class="log-panel">
+    <div class="log-header">
+      <div class="log-header-left">
+        <div class="terminal-dots">
+          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        </div>
+        <span class="log-title">TERMINAL OUTPUT</span>
+      </div>
+      <div id="prog-label" style="font-size:.72rem;color:var(--sub)">0%</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="prog-bar"></div></div>
+    <div class="log-body" id="log-body">
+      <span class="log-sep">// FORG — Flask Folder Organiser ready. Select a source folder and hit Run.</span><br>
+      <span class="log-sep">// New in Flask edition: SSE streaming · Duplicate detector · File watcher</span><br>
+      <span class="log-sep">// Bulk rename · Undo via manifest · ZIP compression · Size/ext filters</span><br>
+    </div>
+    <div class="log-footer">
+      <div class="status-dot" id="status-dot"></div>
+      <span class="status-text" id="status-text">IDLE</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── STATS TAB ─────────── -->
+<div class="tab-content full-panel" id="tab-stats">
+<div class="inner">
+  <p class="page-title">📊 Folder Statistics</p>
+  <p class="page-sub">Scan any folder to see a breakdown by type and size.</p>
+  <div class="card">
+    <div class="path-wrap">
+      <input type="text" id="stats-src" placeholder="Folder to analyse…" style="margin:0">
+      <button class="btn btn-amber" onclick="loadStats()">Analyse</button>
+    </div>
+  </div>
+  <div id="stats-output" style="display:none">
+    <div class="stat-grid" id="stat-boxes"></div>
+    <div class="card">
+      <div class="card-title">By Category</div>
+      <div id="cat-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">By Size Bucket</div>
+      <div id="bucket-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top Extensions</div>
+      <div id="ext-bars"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ─────────── WATCHER TAB ─────────── -->
+<div class="tab-content full-panel" id="tab-watcher">
+<div class="inner">
+  <p class="page-title">👁 Auto-Watcher</p>
+  <p class="page-sub">Monitor a folder in real-time. Any new file dropped in will be automatically organised.</p>
+
+  {% if not watchdog_ok %}
+  <div class="card" style="border-color:#ff174440">
+    <div style="color:var(--red);font-size:.85rem">
+      ⚠ watchdog library not installed.<br>
+      <code style="color:var(--amber)">pip install watchdog</code> then restart the server.
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="card-title">Add Watch</div>
+    <label>Source Folder</label>
+    <input type="text" id="w-src" placeholder="/path/to/watch">
+    <label>Destination Folder</label>
+    <input type="text" id="w-dst" placeholder="/path/to/organised">
+    <div class="toggle-row"><span class="toggle-label">Move (off = Copy)</span>
+      <label class="toggle"><input type="checkbox" id="w-move" checked><span class="toggle-slider"></span></label></div>
+    <div class="toggle-row"><span class="toggle-label">Compress to ZIP</span>
+      <label class="toggle"><input type="checkbox" id="w-compress"><span class="toggle-slider"></span></label></div>
+    <button class="btn btn-green" style="margin-top:6px" onclick="startWatch()">▶ Start Watching</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Active Watchers</div>
+    <div id="watcher-list"><span style="color:var(--sub);font-size:.78rem">No active watchers.</span></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="loadWatchers()">↻ Refresh</button>
+  </div>
+  {% endif %}
+</div>
+</div>
+
+<!-- ─────────── BULK RENAME TAB ─────────── -->
+<div class="tab-content full-panel" id="tab-rename">
+<div class="inner">
+  <p class="page-title">✏️ Bulk Rename Engine</p>
+  <p class="page-sub">Regex substitution, prefix/suffix injection, numbering, and case transforms.</p>
+
+  <div class="card">
+    <div class="card-title">Configuration</div>
+    <label>Source Folder</label>
+    <input type="text" id="r-src" placeholder="/path/to/folder">
+    <label>Extension Filter (e.g. .jpg — leave blank for all)</label>
+    <input type="text" id="r-ext" placeholder="">
+    <div class="col2">
+      <div>
+        <label>Regex Pattern (find)</label>
+        <input type="text" id="r-pattern" placeholder="e.g.  \s+">
+      </div>
+      <div>
+        <label>Replacement</label>
+        <input type="text" id="r-replace" placeholder="e.g.  _">
+      </div>
+    </div>
+    <div class="col2">
+      <div>
+        <label>Prefix</label>
+        <input type="text" id="r-prefix" placeholder="e.g.  2025_">
+      </div>
+      <div>
+        <label>Suffix (before ext)</label>
+        <input type="text" id="r-suffix" placeholder="e.g.  _final">
+      </div>
+    </div>
+    <label>Case Transform</label>
+    <select id="r-case">
+      <option value="none">— none —</option>
+      <option value="lower">lowercase</option>
+      <option value="upper">UPPERCASE</option>
+      <option value="title">Title Case</option>
+    </select>
+    <div class="toggle-row"><span class="toggle-label">Append sequential number</span>
+      <label class="toggle"><input type="checkbox" id="r-numbering"><span class="toggle-slider"></span></label></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="previewRename()">Preview (Dry Run)</button>
+      <button class="btn btn-amber" onclick="applyRename()">Apply Rename</button>
+    </div>
+  </div>
+
+  <div class="card" id="rename-result" style="display:none">
+    <div class="card-title">Preview — <span id="rename-changed-count">0</span> files will change</div>
+    <div class="rename-preview" id="rename-preview"></div>
+  </div>
+</div>
+</div>
+
+<!-- ─────────── DUPLICATES TAB ─────────── -->
+<div class="tab-content full-panel" id="tab-duplicates">
+<div class="inner">
+  <p class="page-title">🔍 Duplicate File Detector</p>
+  <p class="page-sub">Finds identical files by content hash (MD5 or SHA-256). Select extras to delete.</p>
+
+  <div class="card">
+    <div class="path-wrap">
+      <input type="text" id="dup-src" placeholder="Folder to scan for duplicates…" style="margin:0">
+      <select id="dup-algo" style="width:auto;margin:0"><option>md5</option><option>sha256</option></select>
+      <button class="btn btn-amber" onclick="findDups()">Scan</button>
+    </div>
+    <div style="margin-top:8px" class="toggle-row">
+      <span class="toggle-label">Recursive (include sub-folders)</span>
+      <label class="toggle"><input type="checkbox" id="dup-recurse"><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <div id="dup-stats" style="display:none;margin-bottom:12px" class="stat-grid"></div>
+
+  <div id="dup-groups"></div>
+
+  <div id="dup-actions" style="display:none;margin-top:12px" class="btn-row">
+    <button class="btn btn-ghost" onclick="selectAllExtras()">Select All Extras</button>
+    <button class="btn btn-red" onclick="deleteSelected()">Delete Selected</button>
+  </div>
+</div>
+</div>
+
+<!-- ─────────── UNDO TAB ─────────── -->
+<div class="tab-content full-panel" id="tab-undo">
+<div class="inner">
+  <p class="page-title">↩️ Undo Operations</p>
+  <p class="page-sub">Restore files to their original locations using the operation manifest.</p>
+
+  <div class="card">
+    <div class="card-title">Operation History (last 10)</div>
+    <div id="undo-history"><span style="color:var(--sub);font-size:.78rem">Loading…</span></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="loadUndoHistory()">↻ Refresh</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Undo Last Operation</div>
+    <p style="font-size:.78rem;color:var(--sub);margin-bottom:12px">
+      This will reverse the most recent non-dry-run job — moving files back to their original paths.
+    </p>
+    <button class="btn btn-red" onclick="undoLast()">↩ Undo Last Job</button>
+    <div id="undo-result" style="display:none;margin-top:12px;font-size:.8rem;color:var(--green)"></div>
+  </div>
+</div>
+</div>
+
+</main><!-- /main -->
+</div><!-- /app -->
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+/* ════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════ */
+const tabs = document.querySelectorAll(".nav-item");
+const contents = document.querySelectorAll(".tab-content");
+tabs.forEach(t => t.addEventListener("click", () => {
+  tabs.forEach(x=>x.classList.remove("active"));
+  contents.forEach(x=>x.classList.remove("active"));
+  t.classList.add("active");
+  document.getElementById("tab-"+t.dataset.tab).classList.add("active");
+  if(t.dataset.tab==="undo") loadUndoHistory();
+  if(t.dataset.tab==="watcher") loadWatchers();
+}));
+
+/* Clock */
+setInterval(()=>{
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString();
+},1000);
+
+/* ════════════════════════════════════
+   TOAST
+════════════════════════════════════ */
+function toast(msg, type="info"){
+  const el = document.createElement("div");
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById("toasts").appendChild(el);
+  setTimeout(()=>el.remove(), 3500);
+}
+
+/* ════════════════════════════════════
+   LOG HELPERS
+════════════════════════════════════ */
+const logBody = document.getElementById("log-body");
+function addLog(msg, level="info"){
+  const line = document.createElement("div");
+  line.className = "log-line";
+  const ts = document.createElement("span");
+  ts.className = "log-ts";
+  ts.textContent = new Date().toLocaleTimeString();
+  const txt = document.createElement("span");
+  txt.className = level==="sep" ? "log-sep" : `log-${level}`;
+  txt.textContent = msg;
+  if(level==="sep"){ logBody.appendChild(txt); logBody.appendChild(document.createElement("br")); }
+  else { line.appendChild(ts); line.appendChild(txt); logBody.appendChild(line); }
+  logBody.scrollTop = logBody.scrollHeight;
+}
+function clearLog(){
+  logBody.innerHTML = "";
+}
+function saveLog(){
+  const text = logBody.innerText;
+  const a = document.createElement("a");
+  a.href = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
+  a.download = `forg_log_${Date.now()}.txt`;
+  a.click();
+}
+function setProgress(val){
+  document.getElementById("prog-bar").style.width = val + "%";
+  document.getElementById("prog-label").textContent = val + "%";
+}
+function setStatus(state, msg){
+  const dot = document.getElementById("status-dot");
+  dot.className = "status-dot " + state;
+  document.getElementById("status-text").textContent = msg;
+}
+
+/* ════════════════════════════════════
+   SCAN
+════════════════════════════════════ */
+async function scanFolder(){
+  const src = document.getElementById("src").value.trim();
+  if(!src){ toast("Enter a source folder","err"); return; }
+  addLog("Scanning folder…","system");
+  const r = await fetch("/api/scan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source:src})});
+  const d = await r.json();
+  if(d.error){ addLog("Scan error: "+d.error,"error"); return; }
+  addLog(`Found ${d.total} files  (${d.total_size})  —  scan complete`,"ok");
+  toast(`Scanned: ${d.total} files / ${d.total_size}`,"ok");
+}
+
+/* ════════════════════════════════════
+   ORGANISE (SSE)
+════════════════════════════════════ */
+function buildCfg(){
+  const splitList = s => s.split(",").map(x=>x.trim()).filter(Boolean);
+  return {
+    source:     document.getElementById("src").value.trim(),
+    dest:       document.getElementById("dst").value.trim(),
+    move:       document.getElementById("opt-move").checked,
+    dry_run:    document.getElementById("opt-dry").checked,
+    compress:   document.getElementById("opt-compress").checked,
+    dedupe_on_copy: document.getElementById("opt-dedupe").checked,
+    min_size:   parseInt(document.getElementById("filt-min").value)||0,
+    max_size:   parseFloat(document.getElementById("filt-max").value)||Infinity,
+    whitelist:  splitList(document.getElementById("filt-white").value),
+    blacklist:  splitList(document.getElementById("filt-black").value),
+  };
+}
+
+async function runOrganise(){
+  const cfg = buildCfg();
+  if(!cfg.source){ toast("Enter a source folder","err"); return; }
+  if(!cfg.dest)  { toast("Enter a destination folder","err"); return; }
+
+  document.getElementById("run-btn").disabled = true;
+  clearLog();
+  setProgress(0);
+  setStatus("running","RUNNING…");
+
+  const r = await fetch("/api/organise",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cfg)});
+  const {job_id, error} = await r.json();
+  if(error){ addLog("Error: "+error,"error"); document.getElementById("run-btn").disabled=false; return; }
+
+  addLog(`Job ${job_id} queued — streaming output…`,"system");
+
+  const es = new EventSource(`/api/stream/${job_id}`);
+  es.onmessage = e => {
+    const d = JSON.parse(e.data);
+    if(d.heartbeat) return;
+    if(d.msg) addLog(d.msg, d.level||"ok");
+    if(d.progress !== undefined) setProgress(d.progress);
+    if(d.done){
+      es.close();
+      document.getElementById("run-btn").disabled = false;
+      setStatus("done","DONE");
+      toast("Organise complete ✓","ok");
+    }
+  };
+  es.onerror = () => {
+    es.close();
+    setStatus("error","ERROR");
+    document.getElementById("run-btn").disabled = false;
+  };
+}
+
+/* ════════════════════════════════════
+   STATS
+════════════════════════════════════ */
+async function loadStats(){
+  const src = document.getElementById("stats-src").value.trim();
+  if(!src){ toast("Enter a folder","err"); return; }
+  const r = await fetch("/api/scan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source:src})});
+  const d = await r.json();
+  if(d.error){ toast(d.error,"err"); return; }
+
+  document.getElementById("stats-output").style.display = "block";
+
+  // Stat boxes
+  const cats = Object.keys(d.categories).length;
+  document.getElementById("stat-boxes").innerHTML = `
+    <div class="stat-box"><div class="stat-val">${d.total}</div><div class="stat-lbl">Total Files</div></div>
+    <div class="stat-box"><div class="stat-val">${d.total_size}</div><div class="stat-lbl">Total Size</div></div>
+    <div class="stat-box"><div class="stat-val">${cats}</div><div class="stat-lbl">Categories</div></div>
+    <div class="stat-box"><div class="stat-val">${d.top_exts.length}</div><div class="stat-lbl">Unique Ext.</div></div>
+  `;
+
+  const renderBars = (containerId, items, total) => {
+    const max = Math.max(...items.map(([,v])=>v),1);
+    document.getElementById(containerId).innerHTML = items.map(([label,count])=>`
+      <div class="bar-row">
+        <div class="bar-label">${label}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${count/max*100}%"></div></div>
+        <div class="bar-count">${count}</div>
+      </div>`).join("");
+    // animate
+    setTimeout(()=>{
+      document.querySelectorAll(`#${containerId} .bar-fill`).forEach(b=>{b.style.transition='.6s';});
+    },50);
+  };
+
+  // By category
+  const catItems = Object.entries(d.categories).map(([c,b])=>[c, Object.values(b).reduce((a,v)=>a+v,0)]).sort((a,b)=>b[1]-a[1]);
+  renderBars("cat-bars", catItems, d.total);
+
+  // By bucket
+  const bkOrder = ["Tiny","Small","Medium","Large","Huge"];
+  const bkItems = bkOrder.filter(k=>d.buckets[k]).map(k=>[k, d.buckets[k]]);
+  renderBars("bucket-bars", bkItems, d.total);
+
+  // Top exts
+  renderBars("ext-bars", d.top_exts, d.total);
+}
+
+/* ════════════════════════════════════
+   WATCHER
+════════════════════════════════════ */
+async function startWatch(){
+  const cfg = {
+    source:   document.getElementById("w-src").value.trim(),
+    dest:     document.getElementById("w-dst").value.trim(),
+    move:     document.getElementById("w-move").checked,
+    compress: document.getElementById("w-compress").checked,
+  };
+  if(!cfg.source||!cfg.dest){ toast("Fill in source and destination","err"); return; }
+  const r = await fetch("/api/watch/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cfg)});
+  const d = await r.json();
+  if(d.error){ toast(d.error,"err"); return; }
+  toast("Watching: "+cfg.source,"ok");
+  loadWatchers();
+}
+
+async function loadWatchers(){
+  const r = await fetch("/api/watch/list");
+  const {watching} = await r.json();
+  const el = document.getElementById("watcher-list");
+  if(!watching.length){ el.innerHTML='<span style="color:var(--sub);font-size:.78rem">No active watchers.</span>'; return; }
+  el.innerHTML = watching.map(p=>`
+    <div class="watch-entry">
+      <div class="watch-indicator"></div>
+      <span style="flex:1;font-size:.78rem">${p}</span>
+      <button class="btn btn-red btn-sm" onclick="stopWatch('${p}')">Stop</button>
+    </div>`).join("");
+}
+
+async function stopWatch(src){
+  await fetch("/api/watch/stop",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source:src})});
+  toast("Stopped watching","info");
+  loadWatchers();
+}
+
+/* ════════════════════════════════════
+   RENAME
+════════════════════════════════════ */
+function getRenamePayload(dry){
+  return {
+    source:      document.getElementById("r-src").value.trim(),
+    pattern:     document.getElementById("r-pattern").value,
+    replace:     document.getElementById("r-replace").value,
+    prefix:      document.getElementById("r-prefix").value,
+    suffix:      document.getElementById("r-suffix").value,
+    case:        document.getElementById("r-case").value,
+    numbering:   document.getElementById("r-numbering").checked,
+    ext_filter:  document.getElementById("r-ext").value.trim(),
+    dry_run:     dry,
+  };
+}
+
+async function previewRename(){ await doRename(true); }
+async function applyRename(){
+  if(!confirm("Apply renames? This cannot be undone automatically.")) return;
+  await doRename(false);
+}
+
+async function doRename(dry){
+  const payload = getRenamePayload(dry);
+  if(!payload.source){ toast("Enter a folder","err"); return; }
+  const r = await fetch("/api/rename",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const d = await r.json();
+  if(d.error){ toast(d.error,"err"); return; }
+
+  document.getElementById("rename-result").style.display = "block";
+  document.getElementById("rename-changed-count").textContent = d.changed;
+
+  const preview = document.getElementById("rename-preview");
+  preview.innerHTML = d.results.map(row=>`
+    <div class="rename-row">
+      <div class="rename-old">${row.old}</div>
+      ${row.changed
+        ? `<div class="rename-arrow">→</div><div class="rename-new">${row.new}</div>`
+        : `<div class="rename-arrow" style="color:var(--sub)">—</div><div class="rename-same">unchanged</div>`
+      }
+      ${row.error ? `<div style="color:var(--red);font-size:.7rem">✗ ${row.error}</div>` : ""}
+    </div>`).join("");
+
+  if(!dry) toast(`Renamed ${d.changed} files ✓`,"ok");
+}
+
+/* ════════════════════════════════════
+   DUPLICATES
+════════════════════════════════════ */
+let dupData = [];
+
+async function findDups(){
+  const src = document.getElementById("dup-src").value.trim();
+  if(!src){ toast("Enter a folder","err"); return; }
+  const payload = {
+    source:  src,
+    algo:    document.getElementById("dup-algo").value,
+    recurse: document.getElementById("dup-recurse").checked,
+  };
+  toast("Scanning for duplicates…","info");
+  const r = await fetch("/api/duplicates",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const d = await r.json();
+  if(d.error){ toast(d.error,"err"); return; }
+  dupData = d.groups;
+
+  // update badge
+  const badge = document.getElementById("dup-badge");
+  if(d.count>0){ badge.style.display=""; badge.textContent=d.count; }
+  else badge.style.display="none";
+
+  // Stats
+  document.getElementById("dup-stats").style.display = "grid";
+  document.getElementById("dup-stats").innerHTML = `
+    <div class="stat-box"><div class="stat-val">${d.groups.length}</div><div class="stat-lbl">Dup Groups</div></div>
+    <div class="stat-box"><div class="stat-val">${d.count}</div><div class="stat-lbl">Extra Copies</div></div>
+    <div class="stat-box"><div class="stat-val">${d.wasted}</div><div class="stat-lbl">Wasted Space</div></div>
+  `;
+
+  const el = document.getElementById("dup-groups");
+  if(!d.groups.length){ el.innerHTML='<div class="card" style="color:var(--green);font-size:.82rem">✓ No duplicate files found!</div>'; document.getElementById("dup-actions").style.display="none"; return; }
+
+  el.innerHTML = d.groups.map((g,gi)=>`
+    <div class="dup-group">
+      <div class="dup-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+        <span>${g.length} identical files — ${g[0].size}</span>
+        <span style="color:var(--sub);font-size:.72rem">▾ expand</span>
+      </div>
+      <div class="dup-files">
+        ${g.map((f,fi)=>`
+          <div class="dup-file">
+            <input type="checkbox" class="dup-check" data-path="${f.path}" ${fi>0?"checked":""}>
+            <div class="dup-name" title="${f.path}">${f.name}</div>
+            <div class="dup-size">${f.size}</div>
+          </div>`).join("")}
+      </div>
+    </div>`).join("");
+
+  document.getElementById("dup-actions").style.display = "flex";
+}
+
+function selectAllExtras(){
+  document.querySelectorAll(".dup-check").forEach((cb,i)=>{
+    // select all except first in each group
+    const group = cb.closest(".dup-files");
+    const checks = [...group.querySelectorAll(".dup-check")];
+    cb.checked = checks.indexOf(cb) > 0;
+  });
+}
+
+async function deleteSelected(){
+  const checked = [...document.querySelectorAll(".dup-check:checked")].map(cb=>cb.dataset.path);
+  if(!checked.length){ toast("Nothing selected","info"); return; }
+  if(!confirm(`Delete ${checked.length} files permanently?`)) return;
+  const r = await fetch("/api/duplicates/delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paths:checked})});
+  const d = await r.json();
+  toast(`Deleted ${d.deleted} files`,"ok");
+  findDups();
+}
+
+/* ════════════════════════════════════
+   UNDO
+════════════════════════════════════ */
+async function loadUndoHistory(){
+  const r = await fetch("/api/undo/history");
+  const {history} = await r.json();
+  const el = document.getElementById("undo-history");
+  if(!history.length){ el.innerHTML='<span style="color:var(--sub);font-size:.78rem">No recorded operations.</span>'; return; }
+  el.innerHTML = history.map(h=>`
+    <div class="history-item">
+      <div class="history-job">#${h.job_id}</div>
+      <div class="history-ts">${new Date(h.ts).toLocaleString()}</div>
+      <div class="history-count">${h.count} files</div>
+    </div>`).join("");
+}
+
+async function undoLast(){
+  if(!confirm("Undo the last job? Files will be moved back to original locations.")) return;
+  const r = await fetch("/api/undo",{method:"POST"});
+  const d = await r.json();
+  const el = document.getElementById("undo-result");
+  el.style.display = "block";
+  if(d.error){ el.style.color="var(--red)"; el.textContent = "✗ "+d.error; return; }
+  el.style.color = "var(--green)";
+  el.textContent = `✓ Restored ${d.restored} files  (${d.errors} errors)  from job #${d.job_id}`;
+  toast("Undo complete","ok");
+  loadUndoHistory();
+}
+
+/* Init */
+loadUndoHistory();
+</script>
+</body>
+</html>
